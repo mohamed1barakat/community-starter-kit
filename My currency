@@ -1,0 +1,83 @@
+import hashlib
+import time
+
+class Block:
+    def __init__(self, index, previous_hash, timestamp, data, hash):
+        self.index = index
+        self.previous_hash = previous_hash
+        self.timestamp = timestamp
+        self.data = data
+        self.hash = hash
+
+    @staticmethod
+    def create_genesis_block():
+        return Block(0, "0", int(time.time()), "Genesis Block", Block.calculate_hash(0, "0", int(time.time()), "Genesis Block"))
+
+    @staticmethod
+    def calculate_hash(index, previous_hash, timestamp, data):
+        value = str(index) + previous_hash + str(timestamp) + data
+        return hashlib.sha256(value.encode()).hexdigest()
+
+    @staticmethod
+    def create_block(previous_block, data):
+        index = previous_block.index + 1
+        timestamp = int(time.time())
+        hash = Block.calculate_hash(index, previous_block.hash, timestamp, data)
+        return Block(index, previous_block.hash, timestamp, data, hash)
+
+class Blockchain:
+    def __init__(self, currency_value, name):
+        self.chain = [Block.create_genesis_block()]
+        self.pending_transactions = []
+        self.currency_value = currency_value  # Set the value of the currency
+        self.name = name  # Set the name of the coin
+
+    def add_transaction(self, sender, recipient, amount):
+        transaction = {
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount,
+            'currency_value': self.currency_value  # Include currency value in the transaction
+        }
+        self.pending_transactions.append(transaction)
+
+    def mine_block(self):
+        if not self.pending_transactions:
+            print("No transactions to mine.")
+            return
+
+        new_block = Block.create_block(self.chain[-1], self.pending_transactions)
+        self.chain.append(new_block)
+        self.pending_transactions = []  # Reset the pending transactions
+        print(f"Block #{new_block.index} of {self.name} has been mined!")
+        print(f"Hash: {new_block.hash}")
+
+    def print_chain(self):
+        print(f"Blockchain Name: {self.name}")
+        for block in self.chain:
+            print(f"Block #{block.index}:")
+            print(f"  Hash: {block.hash}")
+            print(f"  Previous Hash: {block.previous_hash}")
+            print(f"  Timestamp: {block.timestamp}")
+            print(f"  Data: {block.data}\n")
+
+if __name__ == "__main__":
+    currency_value = 1_000_000_000  # Set currency value to one billion
+    coin_name = "Barakat"  # Name of the coin
+    my_coin = Blockchain(currency_value, coin_name)
+
+    # Adding transactions
+    my_coin.add_transaction("Alice", "Bob", 100)
+    my_coin.add_transaction("Bob", "Charlie", 50)
+
+    # Mining the block
+    my_coin.mine_block()
+
+    # Adding more transactions
+    my_coin.add_transaction("Charlie", "David", 30)
+
+    # Mining again
+    my_coin.mine_block()
+
+    # Print the blockchain
+    my_coin.print_chain()
